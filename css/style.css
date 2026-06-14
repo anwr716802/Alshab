@@ -1,9 +1,9 @@
 /* ========== إعدادات أساسية ومقاييس عالمية ========== */
 :root {
-    --primary-color: #2c3e50;
+    --primary-color: #78C8E1;
     --secondary-color: #c0392b;
     --bg-light: #f4f6f8;
-    --text-dark: #1a252f;
+    --text-dark: black;
     --white: #fff;
     --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     --border-radius: 16px;
@@ -25,13 +25,23 @@ body {
     line-height: 1.6;
     padding-top: 80px;
 }
-
+ul{
+    list-style: none;
+}
 .container {
     width: 92%;
     max-width: 1200px;
     margin: 0 auto;
 }
 
+.categories .container{
+    color: red;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 30px;
+    margin: 20px 0 20px 0;
+}
 img {
     max-width: 100%;
     height: auto;
@@ -39,7 +49,7 @@ img {
 
 a {
     text-decoration: none;
-    color: var(--primary-color);
+    color: var(--text-dark);
 }
 
 /* ========== أزرار بتصميم فاخر ========== */
@@ -120,14 +130,14 @@ a {
 .logo img {
     width: 48px;
     height: 48px;
-    border-radius: 12px;
+    border-radius: 50%;
     object-fit: contain;
 }
 
 .store-name {
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--primary-color);
+    color: var(--text-dark);
     letter-spacing: -0.5px;
 }
 
@@ -179,7 +189,7 @@ a {
 .nav-toggle span {
     width: 28px;
     height: 3px;
-    background: var(--primary-color);
+    background: var(--text-dark);
     border-radius: 3px;
     transition: var(--transition);
 }
@@ -584,6 +594,9 @@ a {
     text-align: center;
 }
 
+.foot-img{
+    border-radius: 50%;
+}
 
 .footer-grid {
     display: grid;
