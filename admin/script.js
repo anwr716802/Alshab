@@ -416,6 +416,166 @@ document.getElementById('productForm').addEventListener('submit', async function
         loadProducts();
     }
 });
+
+
+// ==================== الخدمات (إضافة، تعديل، حذف) ====================
+async function loadServices() {
+    const data = await apiCall('getServices');
+    const list = document.getElementById('servicesList');
+    if (!list || data.error || !Array.isArray(data)) {
+        list.innerHTML = '<p>لا توجد خدمات حالياً.</p>';
+        return;
+    }
+    const rows = data.slice(1);
+    list.innerHTML = rows.map(r => `
+        <div class="card">
+            <img src="${r[5]}" alt="${r[1]}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">
+            <div class="card-info"><strong>${r[1]}</strong><br>${r[2]} - ${r[3] ? r[3] + ' ريال' : 'غير محدد'}</div>
+            <div class="card-actions">
+                <button onclick="editService('${r[0]}','${r[1]}','${r[2]}','${r[3]||''}','${r[4]||''}','${r[5]||''}','${r[6]||''}')">✏️</button>
+                <button onclick="deleteService('${r[0]}')">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function openServiceForm() {
+    document.getElementById('serviceFormModal').style.display = 'flex';
+    document.getElementById('serviceForm').reset();
+    document.getElementById('servId').value = '';
+    document.getElementById('servImageUrl').value = '';
+    document.getElementById('servPreview').style.display = 'none';
+    // تحميل التصنيفات في قائمة الخدمة
+    loadCategoriesForSelect('servCategory');
+}
+
+function closeServiceForm() {
+    document.getElementById('serviceFormModal').style.display = 'none';
+}
+
+function editService(id, name, cat, price, desc, img, wa) {
+    openServiceForm();
+    document.getElementById('servId').value = id;
+    document.getElementById('servName').value = name;
+    document.getElementById('servCategory').value = cat;
+    document.getElementById('servPrice').value = price;
+    document.getElementById('servDesc').value = desc;
+    document.getElementById('servWhatsapp').value = wa || '';
+    document.getElementById('servImageUrl').value = img || '';
+    if (img) {
+        document.getElementById('servPreview').src = img;
+        document.getElementById('servPreview').style.display = 'block';
+    }
+}
+
+async function deleteService(id) {
+    if (!confirm('حذف الخدمة؟')) return;
+    const res = await apiCall('deleteService', { id });
+    if (!res.error) loadServices();
+}
+
+// رفع صورة الخدمة
+function uploadServiceImage() {
+    const fileInput = document.getElementById('servImageFile');
+    const file = fileInput.files[0];
+    if (!file) return alert('اختر صورة');
+    const category = document.getElementById('servCategory').value;
+    let folder = 'marib-store/services/other';
+    if (category === 'كهرباء') folder = 'marib-store/services/electricity';
+    else if (category === 'سباكة') folder = 'marib-store/services/plumbing';
+    else if (category === 'دهانات') folder = 'marib-store/services/painting';
+    uploadImage(file, folder).then(url => {
+        document.getElementById('servImageUrl').value = url;
+        document.getElementById('servPreview').src = url;
+        document.getElementById('servPreview').style.display = 'block';
+        addDebug('صورة الخدمة: ' + url, 'success');
+    }).catch(err => alert('خطأ: ' + err));
+}
+
+// حفظ الخدمة
+document.getElementById('serviceForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const id = document.getElementById('servId').value;
+    const service = {
+        name: document.getElementById('servName').value.trim(),
+        category: document.getElementById('servCategory').value,
+        price: document.getElementById('servPrice').value.trim(),
+        description: document.getElementById('servDesc').value.trim(),
+        image_url: document.getElementById('servImageUrl').value.trim(),
+        whatsapp: document.getElementById('servWhatsapp').value.trim() || CONFIG.whatsapp
+    };
+    if (!service.name || !service.category) return alert('الاسم والتصنيف مطلوبان');
+    if (id) {
+        service.id = id;
+        await apiCall('updateService', service);
+    } else {
+        await apiCall('addService', service);
+    }
+    closeServiceForm();
+    loadServices();
+});
+
+
+// ==================== المعرض ====================
+async function loadGallery() {
+    const data = await apiCall('getGallery');
+    const list = document.getElementById('galleryList');
+    if (!list || data.error || !Array.isArray(data)) {
+        list.innerHTML = '<p>لا توجد صور في المعرض.</p>';
+        return;
+    }
+    const rows = data.slice(1);
+    list.innerHTML = rows.map(r => `
+        <div class="card">
+            <img src="${r[2]}" alt="${r[1]}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;">
+            <div class="card-info"><strong>${r[1]}</strong><br>${r[3]||''}</div>
+            <button onclick="deleteGalleryImage('${r[0]}')">🗑️</button>
+        </div>
+    `).join('');
+}
+
+function openGalleryForm() {
+    document.getElementById('galleryFormModal').style.display = 'flex';
+    document.getElementById('galleryForm').reset();
+    document.getElementById('galId').value = '';
+    document.getElementById('galImageUrl').value = '';
+    document.getElementById('galPreview').style.display = 'none';
+}
+
+function closeGalleryForm() {
+    document.getElementById('galleryFormModal').style.display = 'none';
+}
+
+function uploadGalleryImage() {
+    const file = document.getElementById('galImageFile').files[0];
+    if (!file) return alert('اختر صورة');
+    uploadImage(file, 'marib-store/gallery').then(url => {
+        document.getElementById('galImageUrl').value = url;
+        document.getElementById('galPreview').src = url;
+        document.getElementById('galPreview').style.display = 'block';
+        addDebug('صورة المعرض: ' + url, 'success');
+    }).catch(err => alert('خطأ: ' + err));
+}
+
+document.getElementById('galleryForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const gallery = {
+        title: document.getElementById('galTitle').value.trim(),
+        category: document.getElementById('galCategory').value.trim(),
+        image_url: document.getElementById('galImageUrl').value.trim()
+    };
+    if (!gallery.title || !gallery.image_url) return alert('العنوان والصورة مطلوبان');
+    await apiCall('addGalleryImage', gallery);
+    closeGalleryForm();
+    loadGallery();
+});
+
+async function deleteGalleryImage(id) {
+    if (!confirm('حذف الصورة؟')) return;
+    await apiCall('deleteGalleryImage', { id });
+    loadGallery();
+}
+
 // ==================== عام ====================
 function logout() { sessionStorage.removeItem('adminAuth'); window.location.href = 'login.html'; }
 showTab('products');
