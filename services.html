@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>خدماتنا | مؤسسة الشعب للمقاولات | مأرب</title>
+    <meta name="description" content="خدمات مؤسسة الشعب للمقاولات العامة في مأرب: كهرباء، سباكة، دهانات، ترميم، ديكورات. عروض وأسعار تنافسية.">
+    <meta name="keywords" content="خدمات, كهرباء, سباكة, دهانات, ترميم, مأرب, مؤسسة الشعب">
+    <link rel="canonical" href="https://sparkon-alsheb.netlify.app/services.html">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <img src="assets/images/logo.png" alt="مؤسسة الشعب" width="60" height="60">
+                <span class="store-name">مؤسسة الشعب للمقاولات</span>
+            </a>
+            <nav class="main-nav" id="mainNav">
+                <button class="nav-toggle" onclick="toggleMenu()"><span></span><span></span><span></span></button>
+                <ul>
+                    <li><a href="index.html">الرئيسية</a></li>
+                    <li><a href="services.html" class="active">خدماتنا</a></li>
+                    <li><a href="about.html">من نحن</a></li>
+                    <li><a href="gallery.html">أعمالنا</a></li>
+                    <li><a href="contact.html">تواصل معنا</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="page-hero" style="background: #0a1f3f;">
+            <h1>خدماتنا الاحترافية</h1>
+            <p>حلول متكاملة للمنازل والمشاريع في مأرب</p>
+        </section>
+
+        <section class="container">
+            <!-- تصنيفات الخدمات تُجلب من Google Sheets -->
+            <div class="category-filters" id="categoryFilters"></div>
+            <!-- قائمة الخدمات -->
+            <div id="allServices" class="product-grid"></div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <a href="index.html" class="footer-logo">
+                        <img src="assets/images/logo.png" alt="شعار" width="50">
+                        <span>مؤسسة الشعب للمقاولات</span>
+                    </a>
+                    <p>خدمات كهرباء ودهانات وسباكة وترميم احترافية في مأرب.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>روابط سريعة</h4>
+                    <ul>
+                        <li><a href="about.html">من نحن</a></li>
+                        <li><a href="services.html">خدماتنا</a></li>
+                        <li><a href="contact.html">تواصل معنا</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>تواصل معنا</h4>
+                    <p>واتساب: 770569067 967+</p>
+                    <p>مأرب، شارع الستين</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2024 مؤسسة الشعب للمقاولات العامة</p>
+                <p class="developer">مُبرمج بواسطة الفريق التقني لمؤسسة الشعب - مأرب</p>
+            </div>
+        </div>
+    </footer>
+
+    <a href="https://wa.me/967770569067" class="floating-whatsapp">واتساب</a>
+
+    <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadCategoryFilters();  // تحميل التصنيفات من Google Sheets
+            loadAllServices('all');       // عرض كل الخدمات
+
+            // لو الرابط فيه ?category=كهرباء، تفعّل الفلتر تلقائيًا
+            const params = new URLSearchParams(window.location.search);
+            const cat = params.get('category');
+            if (cat) {
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.category === cat) btn.classList.add('active');
+                });
+                loadAllServices(cat);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -12,7 +12,7 @@ const CONFIG = {
 };
 
 // ==================== API Proxy ====================
-const API_BASE = '/api/proxy';  // يستخدم البروكسي على Vercel
+const API_BASE = '/api/proxy';  // يستخدم البروكسي على Vercel أو Netlify
 
 // ==================== PWA Installation ====================
 let deferredPrompt;
@@ -55,16 +55,16 @@ function showToast(message) {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// ==================== جلب الخدمات والمشاريع من Google Sheets عبر البروكسي ====================
-async function fetchProducts(category = 'all') {
+// ==================== جلب الخدمات من Google Sheets ====================
+async function fetchServices(category = 'all') {
     try {
-        const params = new URLSearchParams({ action: 'getProducts' });
+        const params = new URLSearchParams({ action: 'getServices' }); // استدعاء الخدمات
         const response = await fetch(`${API_BASE}?${params.toString()}`);
         const data = await response.json();
         if (data.error) { console.error(data.error); return []; }
         
         const rows = data.slice(1); // تجاهل الصف الأول من الرؤوس
-        const products = rows.map(row => ({
+        const services = rows.map(row => ({
             id: row[0],
             name: row[1],
             category: row[2],
@@ -74,59 +74,104 @@ async function fetchProducts(category = 'all') {
             whatsapp: row[6] || CONFIG.whatsapp
         }));
         
-        // تحويل الفلترة والتصنيفات برمجياً لتطابق مجالات المقاولات العامة
+        // فلترة حسب التصنيف (مباشرة من الحقل category)
         if (category !== 'all') {
-            const categoryMap = { 
-                construction: 'مقاولات عامة وبناء', 
-                finishing: 'التشطيبات والترميم', 
-                engineering: 'إشراف وتجهيز هندسي', 
-                materials: 'توريد مواد إنشائية' 
-            };
-            const targetCategory = categoryMap[category] || category;
-            return products.filter(p => p.category === targetCategory);
+            return services.filter(s => s.category === category);
         }
-        return products;
+        return services;
     } catch (err) {
-        console.error('فشل جلب خدمات المقاولات:', err);
+        console.error('فشل جلب الخدمات:', err);
         return [];
     }
 }
 
-// ==================== عرض الخدمات والمشاريع في الموقع ====================
-function displayProducts(products, containerId) {
+// ==================== عرض الخدمات في الموقع ====================
+function displayServices(services, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    if (products.length === 0) {
-        container.innerHTML = '<p>لا توجد مشاريع أو خدمات معروضة حالياً.</p>';
+    if (services.length === 0) {
+        container.innerHTML = '<p>لا توجد خدمات معروضة حالياً.</p>';
         return;
     }
-    container.innerHTML = products.map(product => `
+    container.innerHTML = services.map(service => `
         <div class="product-card">
-            <img src="${product.image_url}" alt="${product.name}" loading="lazy">
+            <img src="${service.image_url}" alt="${service.name}" loading="lazy">
             <div class="product-info">
-                <span class="category">${product.category}</span>
-                <h3>${product.name}</h3>
-                <p class="description">${product.description}</p>
-                <p class="price">${product.price ? product.price : 'حسب الاتفاق والمواصفات'}</p>
+                <span class="category">${service.category}</span>
+                <h3>${service.name}</h3>
+                <p class="description">${service.description}</p>
+                <p class="price">${service.price ? service.price : 'حسب الاتفاق والمواصفات'}</p>
                 <div class="product-actions">
-                    <a href="https://wa.me/${product.whatsapp}?text=مرحباً مؤسسة الشعب للمقاولات، أود الاستفسار عن خدمة: ${encodeURIComponent(product.name)}" target="_blank" class="btn-whatsapp-sm">طلب استشارة أو تسعيرة</a>
-                    <button onclick="shareProduct('${product.name}', '${product.description}', '${product.image_url}', '${window.location.origin}/product.html?id=${product.id}')" class="share-btn">مشاركة</button>
+                    <a href="https://wa.me/${service.whatsapp}?text=مرحباً مؤسسة الشعب للمقاولات، أود الاستفسار عن خدمة: ${encodeURIComponent(service.name)}" target="_blank" class="btn-whatsapp-sm">طلب استشارة أو تسعيرة</a>
+                    <button onclick="shareProduct('${service.name}', '${service.description}', '${service.image_url}', '${window.location.origin}/service.html?id=${service.id}')" class="share-btn">مشاركة</button>
                 </div>
             </div>
         </div>
     `).join('');
 }
 
-// ==================== تحميل تلقائي في الصفحة الرئيسية ====================
-async function loadFeaturedProducts() {
-    const products = await fetchProducts('all');
-    displayProducts(products, 'featuredProducts');
+// ==================== تحميل الخدمات المميزة (الصفحة الرئيسية) ====================
+async function loadFeaturedServices() {
+    const services = await fetchServices('all');
+    displayServices(services, 'featuredServices');
 }
 
-// ==================== فلترة المشاريع في صفحة الخدمات ====================
-async function loadAllProducts(category = 'all') {
-    const products = await fetchProducts(category);
-    displayProducts(products, 'allProducts');
+// ==================== تحميل كل الخدمات مع فلترة (صفحة الخدمات) ====================
+async function loadAllServices(category = 'all') {
+    const services = await fetchServices(category);
+    displayServices(services, 'allServices');
+}
+
+// ==================== جلب التصنيفات من Google Sheets (لصفحة الخدمات) ====================
+async function fetchCategories() {
+    try {
+        const params = new URLSearchParams({ action: 'getCategories' });
+        const response = await fetch(`${API_BASE}?${params}`);
+        const data = await response.json();
+        if (data.error || !Array.isArray(data)) return [];
+        const rows = data.slice(1); // إزالة صف الرؤوس
+        return rows.map(row => ({
+            id: row[0],
+            name: row[1],
+            slug: row[2] || row[1].toLowerCase().replace(/\s/g, '-')
+        }));
+    } catch (err) {
+        console.error('فشل جلب التصنيفات:', err);
+        return [];
+    }
+}
+
+// بناء أزرار التصنيفات في صفحة الخدمات
+async function loadCategoryFilters() {
+    const container = document.getElementById('categoryFilters');
+    if (!container) return;
+
+    let categories = await fetchCategories();
+    if (categories.length === 0) {
+        // تصنيفات افتراضية إذا كانت قاعدة البيانات فارغة
+        categories = [
+            { name: 'كهرباء' },
+            { name: 'سباكة' },
+            { name: 'دهانات' },
+            { name: 'ترميم' },
+            { name: 'ديكورات' },
+            { name: 'عروض' }
+        ];
+    }
+
+    container.innerHTML = categories.map((cat, i) =>
+        `<button class="filter-btn ${i === 0 ? 'active' : ''}" data-category="${cat.name}">${cat.name}</button>`
+    ).join('');
+
+    // ربط الأحداث بالأزرار
+    container.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const category = this.dataset.category;
+            loadAllServices(category === 'all' ? 'all' : category);
+        });
+    });
 }
 
 // ==================== مشاركة ====================
@@ -154,19 +199,26 @@ if ('serviceWorker' in navigator) {
 
 // ==================== تشغيل الصفحة المناسبة ====================
 document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('featuredProducts')) {
-        loadFeaturedProducts();
+    // الصفحة الرئيسية: عرض خدمات مميزة
+    if (document.getElementById('featuredServices')) {
+        loadFeaturedServices();
     }
-    if (document.getElementById('allProducts')) {
-        loadAllProducts();
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                loadAllProducts(this.dataset.category);
-            });
+    // صفحة الخدمات: تحميل التصنيفات وعرض الخدمات
+    if (document.getElementById('allServices')) {
+        loadCategoryFilters().then(() => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const cat = urlParams.get('category') || 'all';
+            loadAllServices(cat);
+            // تفعيل الزر المناسب في حالة وجود فئة في الرابط
+            if (cat !== 'all') {
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.category === cat) btn.classList.add('active');
+                });
+            }
         });
     }
+    // إغلاق القائمة عند النقر خارجها
     document.addEventListener('click', (e) => {
         const nav = document.querySelector('.main-nav ul');
         if (nav && nav.classList.contains('show') && !e.target.closest('.main-nav')) {
